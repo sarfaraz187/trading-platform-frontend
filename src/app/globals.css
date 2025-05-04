@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer base {
+  :root {
+    /* Default Light Theme (Adjusted for contrast with dark theme as base) */
+    --background: 0 0% 100%; /* White */
+    --foreground: 222 27% 14%; /* Deep Blue */
+
+    --card: 210 40% 96%; /* Light Gray */
+    --card-foreground: 222 27% 14%; /* Deep Blue */
+
+    --popover: 210 40% 96%; /* Light Gray */
+    --popover-foreground: 222 27% 14%; /* Deep Blue */
+
+    --primary: 149 44% 53%; /* Green */
+    --primary-foreground: 0 0% 98%; /* White-ish */
+
+    --secondary: 210 40% 96%; /* Light Gray */
+    --secondary-foreground: 222 27% 14%; /* Deep Blue */
+
+    --muted: 210 40% 96%; /* Light Gray */
+    --muted-foreground: 222 27% 34%; /* Lighter Deep Blue */
+
+    --accent: 149 44% 53%; /* Green */
+    --accent-foreground: 0 0% 98%; /* White-ish */
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 210 40% 86%; /* Lighter Gray */
+    --input: 210 40% 86%; /* Lighter Gray */
+    --ring: 149 44% 53%; /* Green */
+
+    --radius: 0.5rem;
+
+    --chart-1: 149 44% 53%; /* Green */
+    --chart-2: 210 40% 66%; /* Mid Gray */
+    --chart-3: 222 27% 44%; /* Mid Blue */
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+
+  .dark {
+    /* Dark Theme */
+    --background: 222 27% 14%; /* Deep Blue (#1A202C) */
+    --foreground: 0 0% 98%; /* White-ish */
+
+    --card: 222 27% 20%; /* Slightly Lighter Deep Blue for cards */
+    --card-foreground: 0 0% 98%; /* White-ish */
+
+    --popover: 222 27% 14%; /* Deep Blue */
+    --popover-foreground: 0 0% 98%; /* White-ish */
+
+    --primary: 149 44% 53%; /* Green (#48BB78) */
+    --primary-foreground: 222 27% 14%; /* Deep Blue for contrast on green */
+
+    --secondary: 222 27% 24%; /* Mid Deep Blue */
+    --secondary-foreground: 0 0% 98%; /* White-ish */
+
+    --muted: 222 27% 24%; /* Mid Deep Blue */
+    --muted-foreground: 0 0% 63.9%; /* Lighter Gray */
+
+    --accent: 149 44% 53%; /* Green (#48BB78) */
+    --accent-foreground: 222 27% 14%; /* Deep Blue for contrast on green */
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 222 27% 24%; /* Mid Deep Blue */
+    --input: 222 27% 24%; /* Mid Deep Blue */
+    --ring: 149 44% 53%; /* Green */
+
+    --chart-1: 149 44% 53%; /* Green */
+    --chart-2: 149 44% 63%; /* Lighter Green */
+    --chart-3: 149 44% 43%; /* Darker Green */
+    --chart-4: 210 40% 86%; /* Lighter Gray */
+    --chart-5: 0 0% 80%; /* Mid Gray */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+     /* Default to dark theme based on user request */
+    @apply bg-background text-foreground dark;
+  }
+}

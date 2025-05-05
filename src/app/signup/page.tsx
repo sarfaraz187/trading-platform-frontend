@@ -1,9 +1,12 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import * as z from 'zod';
+import type * as z from 'zod';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // Import useRouter
+import React from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -16,29 +19,18 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from "@/hooks/use-toast"; // Import useToast
+import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from 'lucide-react';
-import React from 'react';
-
-
-const formSchema = z.object({
-  username: z.string().min(3, {
-    message: 'Username must be at least 3 characters.',
-  }),
-  email: z.string().email({
-    message: 'Please enter a valid email address.',
-  }),
-  password: z.string().min(8, {
-    message: 'Password must be at least 8 characters.',
-  }),
-});
+import { useAuth, signupSchema } from '@/context/auth-context'; // Import useAuth and schema
 
 export default function SignupPage() {
-  const { toast } = useToast(); // Initialize toast
+  const { signup, loading } = useAuth(); // Get signup function and loading state
+  const { toast } = useToast();
+  const router = useRouter(); // Initialize router
   const [showPassword, setShowPassword] = React.useState(false);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.infer<typeof signupSchema>>({
+    resolver: zodResolver(signupSchema),
     defaultValues: {
       username: '',
       email: '',
@@ -46,17 +38,33 @@ export default function SignupPage() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Handle form submission logic here (e.g., API call)
-    console.log(values);
-    // Show success toast
-    toast({
-      title: "Account Created!",
-      description: "You have successfully signed up.",
-      variant: "default", // Use default variant which uses accent color for success
-    });
-    // Optionally redirect user or clear form
-     form.reset(); // Example: Reset form after successful submission
+  async function onSubmit(values: z.infer<typeof signupSchema>) {
+    const { success, error } = await signup(values);
+
+    if (success) {
+      toast({
+        title: "Account Created!",
+        description: "You have successfully signed up.",
+        variant: "default",
+      });
+      router.push('/'); // Redirect to home page after successful signup
+    } else {
+      console.error("Signup failed:", error);
+      // Map Firebase error codes to user-friendly messages
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      if (error?.code === 'auth/email-already-in-use') {
+        errorMessage = 'This email address is already in use.';
+      } else if (error?.code === 'auth/weak-password') {
+        errorMessage = 'The password is too weak.';
+      }
+      // Add more specific error handling as needed
+
+      toast({
+        title: "Signup Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
   }
 
    const togglePasswordVisibility = () => setShowPassword(!showPassword);
@@ -119,6 +127,7 @@ export default function SignupPage() {
                             size="icon"
                             className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                             onClick={togglePasswordVisibility}
+                            tabIndex={-1} // Make button unfocusable
                          >
                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                             <span className="sr-only">{showPassword ? 'Hide password' : 'Show password'}</span>
@@ -129,8 +138,8 @@ export default function SignupPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors duration-300 hover:scale-[1.02] active:scale-[0.98]">
-                Sign Up
+              <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors duration-300 hover:scale-[1.02] active:scale-[0.98]" disabled={loading}>
+                {loading ? 'Signing up...' : 'Sign Up'}
               </Button>
             </form>
           </Form>

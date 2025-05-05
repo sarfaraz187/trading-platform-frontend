@@ -1,39 +1,31 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google'; // Using Inter font
-import './globals.css';
-import { cn } from '@/lib/utils';
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import { Header } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
 import { Toaster } from "@/components/ui/toaster"; // Import Toaster
-import { Header } from "@/components/layout/header"; // Import Header
+import { AuthProvider } from "@/context/auth-context"; // Import AuthProvider
+import "./globals.css";
 
-const inter = Inter({ subsets: ['latin'], variable: "--font-sans" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: 'TradeStart', // Updated App Name
-  description: 'Your starting point for stock trading.', // Updated Description
+  title: "TradeStart",
+  description: "Your starting point for stock trading.",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-       {/* Added suppressHydrationWarning for potential theme mismatches initially */}
-      <body
-        className={cn(
-          "min-h-screen bg-background font-sans antialiased dark", // Apply dark class by default
-          inter.variable
-        )}
-      >
-        <div className="flex flex-col min-h-screen">
-          <Header />
-          <main className="flex-grow container mx-auto px-4 py-8 md:px-6 lg:py-12">
-            {children}
-          </main>
-          {/* Optionally add a footer here */}
-        </div>
-        <Toaster /> {/* Add Toaster component */}
+      <body className={`min-h-screen bg-background font-sans antialiased dark ${inter.variable}`}>
+        <AuthProvider>
+          {/* Wrap content with AuthProvider */}
+          <div className="flex flex-col min-h-screen">
+            <Header />
+            <main className="flex-grow container mx-auto px-4 py-8 md:px-6 lg:py-12">{children}</main>
+            <Footer />
+          </div>
+          <Toaster /> {/* Add Toaster here, outside the main flex container if positioned fixed */}
+        </AuthProvider>
       </body>
     </html>
   );

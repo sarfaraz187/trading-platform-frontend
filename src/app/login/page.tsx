@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -5,14 +6,51 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import type * as z from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useAuth, loginSchema } from '@/context/auth-context'; // Import useAuth and schema
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation'; // Import useRouter
+import React from 'react'; // Import React
+import { Eye, EyeOff } from 'lucide-react'; // Import Eye icons
 
 export default function LoginPage() {
-  // Basic form state/submission logic would go here
-  const handleSubmit = (event: React.FormEvent) => {
-      event.preventDefault();
-      // Handle login logic
-      console.log("Login attempt");
-  };
+  const { login, loading } = useAuth(); // Get login function and loading state
+  const { toast } = useToast();
+  const router = useRouter(); // Initialize router
+  const [showPassword, setShowPassword] = React.useState(false);
+
+  const form = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  async function onSubmit(values: z.infer<typeof loginSchema>) {
+    const { success, error } = await login(values);
+
+    if (success) {
+      toast({
+        title: 'Login Successful',
+        description: 'Welcome back!',
+        variant: 'default',
+      });
+      router.push('/'); // Redirect to home page on successful login
+    } else {
+      console.error('Login failed:', error);
+      toast({
+        title: 'Login Failed',
+        description: error?.message || 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  }
+
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   return (
     <div className="flex items-center justify-center py-12">
@@ -20,40 +58,71 @@ export default function LoginPage() {
         <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">Login to TradeStart</CardTitle>
           <CardDescription className="text-center text-muted-foreground">
-            Enter your email below to login to your account.
+            Enter your email and password below to login.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
-                required
-                className="bg-input text-foreground placeholder:text-muted-foreground transition-shadow duration-300 focus:shadow-md"
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="m@example.com"
+                        {...field}
+                        className="bg-input text-foreground placeholder:text-muted-foreground transition-shadow duration-300 focus:shadow-md"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center">
-                <Label htmlFor="password">Password</Label>
-                <Link href="#" className="ml-auto inline-block text-sm text-primary hover:underline" prefetch={false}>
-                  Forgot your password?
-                </Link>
-              </div>
-              <Input
-                id="password"
-                type="password"
-                required
-                placeholder="********"
-                className="bg-input text-foreground placeholder:text-muted-foreground transition-shadow duration-300 focus:shadow-md"
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center">
+                        <FormLabel>Password</FormLabel>
+                        <Link href="#" className="ml-auto inline-block text-sm text-primary hover:underline" prefetch={false}>
+                        Forgot your password?
+                        </Link>
+                    </div>
+                    <FormControl>
+                        <div className="relative">
+                            <Input
+                                type={showPassword ? "text" : "password"}
+                                placeholder="********"
+                                {...field}
+                                className="bg-input text-foreground placeholder:text-muted-foreground transition-shadow duration-300 focus:shadow-md pr-10"
+                            />
+                             <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                onClick={togglePasswordVisibility}
+                                tabIndex={-1} // Make button unfocusable
+                            >
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                <span className="sr-only">{showPassword ? 'Hide password' : 'Show password'}</span>
+                            </Button>
+                        </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors duration-300 hover:scale-[1.02] active:scale-[0.98]">
-              Login
-            </Button>
-          </form>
+              <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors duration-300 hover:scale-[1.02] active:scale-[0.98]" disabled={loading}>
+                {loading ? 'Logging in...' : 'Login'}
+              </Button>
+            </form>
+          </Form>
           <div className="mt-6 text-center text-sm">
              <span className="text-muted-foreground">Don&apos;t have an account? </span>
             <Link href="/signup" className="font-medium text-primary hover:underline" prefetch={false}>

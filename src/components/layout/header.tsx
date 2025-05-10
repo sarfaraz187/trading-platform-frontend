@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet"; // Added SheetClose
-import { Menu, Mountain, LogIn, LogOut, UserPlus, HomeIcon } from "lucide-react"; // Added icons
+import { Menu, Mountain, LogIn, LogOut, UserPlus, HomeIcon, UserCircle, SettingsIcon } from "lucide-react"; // Added UserCircle, SettingsIcon
 import { useAuth } from "@/context/auth-context"; // Import useAuth
 import { Skeleton } from "@/components/ui/skeleton"; // Import Skeleton for loading state
 import { useRouter } from "next/navigation";
@@ -30,66 +30,78 @@ export function Header() {
         <div className={`flex items-center gap-${isMobile ? "4" : "6"}`}>
           <Skeleton className={`h-8 w-${isMobile ? "full" : "20"}`} />
           <Skeleton className={`h-8 w-${isMobile ? "full" : "20"}`} />
+          {user && !isMobile && <Skeleton className="h-8 w-20" />}
+          {user && !isMobile && <Skeleton className="h-8 w-20" />}
         </div>
       );
     }
 
-    const commonLinkClasses = "text-sm font-medium text-muted-foreground transition-colors hover:text-foreground flex items-center gap-2"; // Added flex, items-center, gap
-    const mobileLinkClasses = "text-lg"; // Larger text for mobile sheet
+    const commonLinkClasses = "text-sm font-medium text-muted-foreground transition-colors hover:text-foreground flex items-center gap-2";
+    const mobileLinkClasses = "text-lg";
 
     if (user) {
-      // User is logged in, show Logout button
-      const buttonContent = (
-        <>
-          <LogOut className="h-4 w-4" /> Logout
-        </>
+      // User is logged in
+      const profileLink = (
+        <Link href="/user/profile" className={`${commonLinkClasses} ${isMobile ? mobileLinkClasses + " justify-start w-full" : ""}`} prefetch={false}>
+          <UserCircle className={isMobile ? "h-5 w-5" : "h-4 w-4"} /> Profile
+        </Link>
+      );
+      const settingsLink = (
+        <Link href="/user/settings" className={`${commonLinkClasses} ${isMobile ? mobileLinkClasses + " justify-start w-full" : ""}`} prefetch={false}>
+          <SettingsIcon className={isMobile ? "h-5 w-5" : "h-4 w-4"} /> Settings
+        </Link>
+      );
+      const logoutButton = (
+        <Button variant="ghost" onClick={handleLogout} className={`${commonLinkClasses} ${isMobile ? mobileLinkClasses + " justify-start w-full" : ""}`}>
+          <LogOut className={isMobile ? "h-5 w-5" : "h-4 w-4"} /> Logout
+        </Button>
       );
 
       if (isMobile) {
         return (
-          <SheetClose asChild>
-            <Button variant="ghost" onClick={handleLogout} className={`${commonLinkClasses} ${mobileLinkClasses} justify-start w-full`}>
-              {buttonContent}
-            </Button>
-          </SheetClose>
+          <>
+            <SheetClose asChild>{profileLink}</SheetClose>
+            <SheetClose asChild>{settingsLink}</SheetClose>
+            <SheetClose asChild>{logoutButton}</SheetClose>
+          </>
         );
       } else {
         return (
-          <Button variant="ghost" onClick={handleLogout} className={commonLinkClasses}>
-            {buttonContent}
-          </Button>
+          <>
+            {profileLink}
+            {settingsLink}
+            {logoutButton}
+          </>
         );
       }
     } else {
       // User is logged out, show Login and Sign Up links
       const loginLink = (
         <Link href="/login" className={`${commonLinkClasses} ${isMobile ? mobileLinkClasses : ""}`} prefetch={false}>
-          <LogIn className="h-4 w-4" /> Login
+          <LogIn className={isMobile ? "h-5 w-5" : "h-4 w-4"} /> Login
         </Link>
       );
-
-      const signupLink = (
-        <Link href="/signup" className={`${commonLinkClasses} ${isMobile ? mobileLinkClasses : ""}`} prefetch={false}>
-          <UserPlus className="h-4 w-4" /> Sign Up
-        </Link>
-      );
+      const signupButtonLink = // Changed to a button for desktop to match style
+        (
+          <Button asChild size="sm" variant={isMobile ? "ghost" : "default"} className={isMobile ? `${commonLinkClasses} ${mobileLinkClasses} justify-start w-full` : ""}>
+            <Link href="/signup" prefetch={false}>
+              <UserPlus className={isMobile ? "h-5 w-5" : "mr-2 h-4 w-4"} /> Sign Up
+            </Link>
+          </Button>
+        );
 
       if (isMobile) {
         return (
           <>
             <SheetClose asChild>{loginLink}</SheetClose>
-            <SheetClose asChild>{signupLink}</SheetClose>
+            <SheetClose asChild>{signupButtonLink}</SheetClose>
           </>
         );
       } else {
         return (
           <>
             {loginLink}
-            <Button asChild size="sm">
-              <Link href="/signup" prefetch={false}>
-                <UserPlus className="mr-2 h-4 w-4" /> Sign Up
-              </Link>
-            </Button>
+            {signupButtonLink}
           </>
         );
       }
@@ -118,17 +130,19 @@ export function Header() {
         </SheetTrigger>
         <SheetContent side="right">
           <nav className="grid gap-4 py-6 text-lg font-medium">
-            <Link href="/" className="flex items-center gap-2 px-2.5 mb-4" prefetch={false}>
-              <Mountain className="h-6 w-6 text-primary" />
-              <span className="text-lg font-semibold text-foreground">TradeStart</span>
-            </Link>
             <SheetClose asChild>
-              <Link href="/" className="text-muted-foreground transition-colors hover:text-foreground flex items-center gap-2 px-2.5" prefetch={false}>
+              <Link href="/" className="flex items-center gap-2 px-2.5 mb-4" prefetch={false}>
+                <Mountain className="h-6 w-6 text-primary" />
+                <span className="text-lg font-semibold text-foreground">TradeStart</span>
+              </Link>
+            </SheetClose>
+            <SheetClose asChild>
+              <Link href="/" className="text-muted-foreground transition-colors hover:text-foreground flex items-center gap-2 px-2.5 text-lg" prefetch={false}>
                 <HomeIcon className="h-5 w-5" /> Home
               </Link>
             </SheetClose>
             {/* Render auth links for mobile */}
-            <div className="grid gap-4 px-2.5">{renderAuthLinks(true)}</div>
+            <div className="grid gap-2 px-2.5">{renderAuthLinks(true)}</div>
           </nav>
         </SheetContent>
       </Sheet>

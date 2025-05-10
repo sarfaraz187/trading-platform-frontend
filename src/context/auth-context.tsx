@@ -1,12 +1,31 @@
-"use client";
 
-import type { User, AuthError } from "firebase/auth";
-import { onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
-import type { ReactNode } from "react";
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { auth } from "@/lib/firebase/config";
-import type * as z from "zod"; // Import zod
-import type { loginSchema, signupSchema } from "@/lib/schemas/auth-schemas"; // Assuming schemas exist
+'use client';
+
+import type { User, AuthError } from 'firebase/auth';
+import {
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  updateProfile, // Import updateProfile
+} from 'firebase/auth';
+import type { ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { auth } from '@/lib/firebase/config';
+import type * as z from 'zod';
+import { loginSchema, signupSchema } from '@/lib/schemas/auth-schemas';
+
+// Helper function to set a cookie
+function setTokenCookie(token: string) {
+  const expiryDate = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+  document.cookie = `firebaseIdToken=${token}; path=/; expires=${expiryDate.toUTCString()}; SameSite=Lax; Secure`; // Added Secure flag
+}
+
+// Helper function to delete a cookie
+function deleteTokenCookie() {
+  document.cookie = 'firebaseIdToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure'; // Added Secure flag
+}
+
 
 type AuthContextType = {
   user: User | null;
@@ -23,33 +42,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      (user) => {
-        setUser(user);
-        setLoading(false);
-      },
-      (error) => {
-        // Add error handling for onAuthStateChanged
-        console.error("Auth state change error:", error);
-        setUser(null); // Ensure user is null on error
-        setLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        try {
+          const token = await currentUser.getIdToken();
+          setTokenCookie(token); 
+          setUser(currentUser);
+        } catch (error) {
+          console.error("Error getting ID token:", error);
+          deleteTokenCookie(); 
+          setUser(null);
+        }
+      } else {
+        deleteTokenCookie(); 
+        setUser(null);
       }
-    );
+      setLoading(false);
+    }, (error) => {
+        console.error("Auth state change error:", error);
+        deleteTokenCookie();
+        setUser(null);
+        setLoading(false);
+    });
 
-    // Initial check to see if auth is available
+
     if (!auth) {
-      console.error("Firebase Auth instance is not available in AuthProvider.");
-      setLoading(false); // Stop loading if auth fails early
+        console.error("Firebase Auth instance is not available in AuthProvider.");
+        deleteTokenCookie();
+        setLoading(false);
     }
+
 
     return () => unsubscribe();
   }, []);
 
   const login = async (values: z.infer<typeof loginSchema>) => {
     if (!auth) {
-      console.error("Firebase Auth not initialized for login.");
-      return { success: false, error: { code: "auth/internal-error", message: "Auth not initialized" } as AuthError };
+        console.error("Firebase Auth not initialized for login.");
+        return { success: false, error: { code: 'auth/internal-error', message: 'Auth not initialized' } as AuthError };
     }
     setLoading(true);
     try {
@@ -58,62 +88,70 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { success: true };
     } catch (error) {
       setLoading(false);
+      deleteTokenCookie(); 
       return { success: false, error: error as AuthError };
     }
   };
 
   const signup = async (values: z.infer<typeof signupSchema>) => {
     if (!auth) {
-      console.error("Firebase Auth not initialized for signup.");
-      return { success: false, error: { code: "auth/internal-error", message: "Auth not initialized" } as AuthError };
-    }
-    setLoading(true);
+        console.error("Firebase Auth not initialized for signup.");
+        return { success: false, error: { code: 'auth/internal-error', message: 'Auth not initialized' } as AuthError };
+     }
+     setLoading(true);
     try {
-      // Note: Firebase createUser only requires email and password.
-      // Username would typically be saved separately (e.g., Firestore) or in user profile update.
-      await createUserWithEmailAndPassword(auth, values.email, values.password);
-      // TODO: Optionally update user profile with username here
-      // await updateProfile(auth.currentUser, { displayName: values.username });
-      setLoading(false);
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      // After creating the user, update their profile with the username
+      if (userCredential.user) {
+        await updateProfile(userCredential.user, {
+          displayName: values.username,
+        });
+        // Re-fetch the user to get the updated profile information, or onAuthStateChanged will handle it.
+        // Forcing a reload of the user data might be necessary if onAuthStateChanged doesn't pick it up immediately.
+        // However, onAuthStateChanged should trigger with the updated user.
+      }
+       setLoading(false);
       return { success: true };
     } catch (error) {
-      setLoading(false);
+       setLoading(false);
+       deleteTokenCookie(); 
       return { success: false, error: error as AuthError };
     }
   };
 
   const logout = async () => {
     if (!auth) {
-      console.error("Firebase Auth not initialized for logout.");
-      // Handle the case where logout is attempted without auth
-      setLoading(false); // Ensure loading state is reset
-      return; // Exit early
+        console.error("Firebase Auth not initialized for logout.");
+        setLoading(false);
+        return;
     }
     setLoading(true);
     try {
-      await signOut(auth);
-    } catch (error) {
-      console.error("Error signing out: ", error);
-      // Optionally handle logout error (e.g., show a toast)
+        await signOut(auth);
+        deleteTokenCookie();
+    } catch(error) {
+        console.error("Error signing out: ", error);
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
+
   };
 
   const contextValue = { user, loading, login, signup, logout };
 
-  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    // This error is thrown if useAuth is called outside of AuthProvider's context.
-    // Check component tree structure and ensure Firebase initializes correctly.
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
 
-// Re-export schemas defined in the dedicated schema file
-export { loginSchema, signupSchema } from "@/lib/schemas/auth-schemas";
+export { loginSchema, signupSchema } from '@/lib/schemas/auth-schemas';

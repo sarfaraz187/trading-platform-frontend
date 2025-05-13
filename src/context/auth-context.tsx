@@ -32,11 +32,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
       });
-
       console.log("Setting auth cookie response:", response);
-      if (!response.ok) {
-        console.error("Failed to set auth cookie:", await response.text());
-      }
+      if (!response.ok) console.error("Failed to set auth cookie:", await response.text());
     } catch (error) {
       console.error("Error setting auth cookie:", error);
     }

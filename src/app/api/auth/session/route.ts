@@ -6,12 +6,10 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { token } = body;
 
-    if (!token) {
-      return NextResponse.json({ error: "Token is required" }, { status: 400 });
-    }
+    if (!token) return NextResponse.json({ error: "Token is required" }, { status: 400 });
 
     // Calculate expiry - Firebase tokens typically last 1 hour
-    const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+    const expiry = new Date(Date.now() + 60 * 60 * 1000);
 
     // Set the HTTP-only cookie manually using Set-Cookie header
     const cookie = serialize("authToken", token, {

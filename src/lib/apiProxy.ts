@@ -9,7 +9,7 @@ type ProxyOptions = {
 };
 
 export async function proxyToBackend({ req, endpoint, method = "GET", body }: ProxyOptions) {
-  const idToken = req.cookies.get("idToken")?.value;
+  const idToken = req.cookies.get("authToken")?.value;
 
   if (!idToken) {
     return NextResponse.json({ error: "No token found" }, { status: 401 });

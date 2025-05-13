@@ -1,48 +1,49 @@
-
-import type { NextRequest } from 'next/server'
-import { NextResponse } from 'next/server'
+// middleware.ts
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 // Add paths that require authentication
-const protectedRoutes = ['/', '/profile', '/settings']; // Added /profile and /settings
+const protectedRoutes = ["/", "/profile", "/settings"];
+// Add paths that are accessible only when NOT authenticated
+const authRoutes = ["/login", "/signup", "/forgot-password"];
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('firebaseIdToken'); // Assuming you store the ID token in a cookie named 'firebaseIdToken'
+  const token = request.cookies.get("authToken");
   const { pathname } = request.nextUrl;
 
-  const isProtectedRoute = protectedRoutes.some(route => {
-    // Exact match for /
-    if (route === '/') return pathname === '/';
-    // StartsWith for other routes (e.g. /profile, /profile/edit)
-    return pathname === route || pathname.startsWith(route + '/');
-  });
-  
-  // If trying to access a protected route without a token, redirect to login
-  if (isProtectedRoute && !token) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    // You can add a 'redirectedFrom' query parameter if needed
-    // url.searchParams.set('redirectedFrom', pathname);
+  // Store original destination for redirects
+  const url = request.nextUrl.clone();
+
+  // If user is trying to access a protected route without a token
+  if (protectedRoutes.some((route) => (route === "/" && pathname === "/") || (route !== "/" && (pathname === route || pathname.startsWith(`${route}/`))))) {
+    if (!token) {
+      // Redirect to login with original destination as a parameter
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // If user is authenticated and trying to access auth pages (login, register)
+  if (token && authRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`))) {
+    // Redirect to home page
+    url.pathname = "/";
     return NextResponse.redirect(url);
   }
 
-  // Allow the request to proceed if it's not a protected route or if the user is authenticated
   return NextResponse.next();
 }
 
-// See "Matching Paths" below to learn more
+// Configure which paths middleware should run on
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
+     * Match all request paths except:
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - login page
-     * - signup page
-     * - public assets (e.g. /images, /terms, /privacy)
+     * - public files (images, etc.)
+     * - api routes (except auth-related ones we want to protect)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|login|signup|images|terms|privacy).*)',
-    '/', // Explicitly include the root path if it's protected
+    "/((?!_next/static|_next/image|favicon.ico|public/|api/(?!protected)).*)",
   ],
-}
+};

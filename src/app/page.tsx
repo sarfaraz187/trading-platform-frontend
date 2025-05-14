@@ -4,8 +4,12 @@ import { useEffect } from "react";
 import { MarketOverview } from "@/components/home/market-overview";
 import { TopStocks } from "@/components/home/top-stocks";
 import { PortfolioSummary } from "@/components/home/portfolio-summary";
+import { useAuth } from "@/context/auth-context";
+import { proxyToBackend } from "@/lib/api-proxy";
 
 export default function Home() {
+  const { user, loading } = useAuth();
+
   useEffect(() => {
     async function checkHealth() {
       try {
@@ -21,6 +25,23 @@ export default function Home() {
     checkHealth();
   }, []);
 
+  useEffect(() => {
+    console.log("Current user:", user);
+    async function fetchUserData() {
+      if (user) {
+        try {
+          const res = await fetch(`/api/user/${user.uid}`, { method: "GET" });
+          if (!res.ok) throw new Error("Failed to fetch user data");
+          const data = await res.json();
+          console.log("User data:", data);
+        } catch (err) {
+          console.error("Error fetching user data:", err);
+        }
+      }
+    }
+
+    fetchUserData();
+  }, [user]);
   return (
     <div className="flex flex-col gap-8">
       <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>

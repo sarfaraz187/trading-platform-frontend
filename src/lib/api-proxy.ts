@@ -11,9 +11,7 @@ type ProxyOptions = {
 export async function proxyToBackend({ req, endpoint, method = "GET", body }: ProxyOptions) {
   const idToken = req.cookies.get("authToken")?.value;
 
-  if (!idToken) {
-    return NextResponse.json({ error: "No token found" }, { status: 401 });
-  }
+  if (!idToken) return NextResponse.json({ error: "No token found" }, { status: 401 });
 
   const backendRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
     method,

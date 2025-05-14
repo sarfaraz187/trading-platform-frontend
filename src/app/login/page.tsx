@@ -10,54 +10,26 @@ import type * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useAuth, loginSchema } from "@/context/auth-context"; // Import useAuth and schema
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { useAuthRedirect } from "@/hooks/use-redirect";
 
 export default function LoginPage() {
   const { login, loading } = useAuth(); // Get login function and loading state
   const { toast } = useToast();
-  const router = useRouter(); // Initialize router
   const [showPassword, setShowPassword] = useState(false);
   const [authAttempted, setAuthAttempted] = useState(false);
+  useAuthRedirect(authAttempted, () => setAuthAttempted(false));
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
 
-  useEffect(() => {
-    const checkCookie = async () => {
-      if (!authAttempted) return;
-      try {
-        const response = await fetch("/api/auth/check-cookie");
-        const data = await response.json(); // ✅ Needed
-
-        console.log("Cookie check response:", data);
-
-        if (data.authenticated) {
-          router.push("/"); // ✅ Redirect if cookie exists
-        } else {
-          setTimeout(checkCookie, 200); // Poll until cookie appears
-        }
-      } catch (error) {
-        console.error("Error checking cookie:", error);
-        setAuthAttempted(false);
-      }
-    };
-
-    checkCookie();
-  }, [authAttempted]);
-
   async function onSubmit(values: z.infer<typeof loginSchema>) {
-    console.log("Submit Triggered =========");
     const { success, error } = await login(values);
     if (success) {
-      toast({
-        title: "Login Successful",
-        description: "Welcome back!",
-        variant: "default",
-      });
+      toast({ title: "Login Successful", description: "Welcome back!", variant: "default" });
       setAuthAttempted(true);
     } else {
       console.error("Login failed:", error);

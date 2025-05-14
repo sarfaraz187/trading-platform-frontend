@@ -49,6 +49,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Helper function to set token in HTTP-only cookie via API
+  const createUser = async (body: { uid: string; email: string | null; displayName: string | null }) => {
+    try {
+      const response = await fetch("/api/user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      console.log("Creating user response:", response);
+      if (!response.ok) console.error("Failed to create user:", await response.text());
+    } catch (error) {
+      console.error("Error creating user:", error);
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
       auth,
@@ -118,7 +133,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       // After creating the user, update their profile with the username
       if (userCredential.user) {
-        await updateProfile(userCredential.user, {
+        await updateProfile(userCredential.user, { displayName: values.username });
+        await createUser({
+          uid: userCredential.user.uid,
+          email: userCredential.user.email,
           displayName: values.username,
         });
         // The token cookie will be set in the onAuthStateChanged listener

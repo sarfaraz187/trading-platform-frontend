@@ -6,5 +6,6 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest, userId: string) {
+  console.log("GET userId", userId);
   return proxyToBackend({ req, endpoint: `/users/${userId}` });
 }
